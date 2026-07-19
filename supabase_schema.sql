@@ -5,14 +5,17 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- 1. Custom Types
-CREATE TYPE public.user_role AS ENUM ('buyer', 'producer', 'admin');
 CREATE TYPE public.subscription_tier AS ENUM ('free', 'premium');
 
 -- 2. Profiles Table (Linked to auth.users)
 CREATE TABLE public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    role public.user_role NOT NULL DEFAULT 'buyer',
+    is_buyer BOOLEAN NOT NULL DEFAULT true,
+    is_producer BOOLEAN NOT NULL DEFAULT false,
+    is_admin BOOLEAN NOT NULL DEFAULT false,
     is_approved_by_admin BOOLEAN NOT NULL DEFAULT false,
+    accepted_terms_at TIMESTAMP WITH TIME ZONE,
+    accepted_gdpr_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -126,34 +129,58 @@ ON CONFLICT (name) DO NOTHING;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 DECLARE
-  v_role text;
+  v_is_buyer boolean;
+  v_is_producer boolean;
+  v_is_admin boolean;
   v_name text;
   v_phone text;
   v_farm_name text;
+  v_accepted_terms boolean;
+  v_accepted_gdpr boolean;
 BEGIN
   -- Extract raw metadata fields, handle defaults
-  v_role := COALESCE(new.raw_user_meta_data->>'role', 'buyer');
+  v_is_buyer := COALESCE((new.raw_user_meta_data->>'isBuyer')::boolean, true);
+  v_is_producer := COALESCE((new.raw_user_meta_data->>'isProducer')::boolean, false);
+  v_is_admin := COALESCE((new.raw_user_meta_data->>'isAdmin')::boolean, false);
+  
   v_name := COALESCE(new.raw_user_meta_data->>'name', 'Új Felhasználó');
   v_phone := COALESCE(new.raw_user_meta_data->>'phone', '');
-  v_farm_name := COALESCE(new.raw_user_meta_data->>'farm_name', 'Új Gazdaság');
+  v_farm_name := COALESCE(new.raw_user_meta_data->>'farmName', 'Új Gazdaság');
+  
+  v_accepted_terms := COALESCE((new.raw_user_meta_data->>'acceptTerms')::boolean, false);
+  v_accepted_gdpr := COALESCE((new.raw_user_meta_data->>'acceptGdpr')::boolean, false);
 
   -- Insert profile
-  INSERT INTO public.profiles (id, role, is_approved_by_admin)
+  INSERT INTO public.profiles (
+    id, 
+    is_buyer, 
+    is_producer, 
+    is_admin, 
+    is_approved_by_admin,
+    accepted_terms_at,
+    accepted_gdpr_at
+  )
   VALUES (
     new.id,
-    v_role::public.user_role,
+    v_is_buyer,
+    v_is_producer,
+    v_is_admin,
     CASE 
-      WHEN v_role = 'admin' THEN true 
-      WHEN v_role = 'buyer' THEN true -- buyers are auto-approved
-      ELSE false -- producers require admin approval initially
-    END
+      WHEN v_is_admin THEN true 
+      WHEN v_is_producer THEN false -- producers require admin approval initially
+      ELSE true -- buyers are auto-approved
+    END,
+    CASE WHEN v_accepted_terms THEN now() ELSE null END,
+    CASE WHEN v_accepted_gdpr THEN now() ELSE null END
   );
 
-  -- Insert sub-profile based on role
-  IF v_role = 'producer' THEN
+  -- Insert sub-profiles
+  IF v_is_producer THEN
     INSERT INTO public.producer_profiles (id, farm_name, bio, phone, is_phone_public, subscription_tier)
     VALUES (new.id, v_farm_name, '', v_phone, false, 'free');
-  ELSE
+  END IF;
+
+  IF v_is_buyer THEN
     INSERT INTO public.buyer_profiles (id, name, phone)
     VALUES (new.id, v_name, v_phone);
   END IF;
@@ -299,7 +326,7 @@ CREATE POLICY "Producer profiles updateable by owner" ON public.producer_profile
 -- categories
 CREATE POLICY "Categories readable by anyone" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Categories manageable by admin" ON public.categories FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
 -- products
@@ -317,7 +344,7 @@ CREATE POLICY "Locations manageable by producer owner" ON public.producer_locati
 -- markets
 CREATE POLICY "Markets readable by anyone" ON public.markets FOR SELECT USING (true);
 CREATE POLICY "Markets manageable by admin" ON public.markets FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
 -- message_threads
@@ -346,5 +373,5 @@ CREATE POLICY "Messages insertable by thread participants" ON public.messages FO
 -- blog_posts
 CREATE POLICY "Blog posts readable by anyone" ON public.blog_posts FOR SELECT USING (true);
 CREATE POLICY "Blog posts manageable by admin" ON public.blog_posts FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 );

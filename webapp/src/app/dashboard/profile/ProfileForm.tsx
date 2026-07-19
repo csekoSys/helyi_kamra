@@ -11,7 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, User, Phone, Store, FileText, CheckCircle } from 'lucide-react'
 
 interface ProfileFormProps {
-  role: 'buyer' | 'producer' | 'admin'
+  isBuyer: boolean
+  isProducer: boolean
+  isAdmin: boolean
   initialData: {
     name?: string
     farm_name?: string
@@ -21,7 +23,7 @@ interface ProfileFormProps {
   }
 }
 
-export default function ProfileForm({ role, initialData }: ProfileFormProps) {
+export default function ProfileForm({ isBuyer, isProducer, initialData }: ProfileFormProps) {
   const [name, setName] = useState(initialData.name || '')
   const [farmName, setFarmName] = useState(initialData.farm_name || '')
   const [bio, setBio] = useState(initialData.bio || '')
@@ -40,11 +42,11 @@ export default function ProfileForm({ role, initialData }: ProfileFormProps) {
 
     try {
       const res = await updateProfile(null, {
-        name: role === 'buyer' ? name : undefined,
-        farm_name: role === 'producer' ? farmName : undefined,
-        bio: role === 'producer' ? bio : undefined,
+        name: isBuyer ? name : undefined,
+        farm_name: isProducer ? farmName : undefined,
+        bio: isProducer ? bio : undefined,
         phone,
-        is_phone_public: role === 'producer' ? isPhonePublic : undefined,
+        is_phone_public: isProducer ? isPhonePublic : undefined,
       })
 
       if (res.error) {
@@ -86,7 +88,7 @@ export default function ProfileForm({ role, initialData }: ProfileFormProps) {
 
           <div className="grid gap-4">
             {/* Buyer Profile Fields */}
-            {role === 'buyer' && (
+            {isBuyer && (
               <div className="space-y-2">
                 <Label htmlFor="prof-name">Teljes név</Label>
                 <div className="relative">
@@ -103,7 +105,7 @@ export default function ProfileForm({ role, initialData }: ProfileFormProps) {
             )}
 
             {/* Producer Profile Fields */}
-            {role === 'producer' && (
+            {isProducer && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="prof-farm">Gazdaság / Tanya megnevezése</Label>
@@ -152,7 +154,7 @@ export default function ProfileForm({ role, initialData }: ProfileFormProps) {
             </div>
 
             {/* Public Phone toggle for Producer */}
-            {role === 'producer' && (
+            {isProducer && (
               <div className="flex items-center justify-between border-t border-border pt-4">
                 <div className="flex flex-col gap-0.5">
                   <Label htmlFor="phone-public">Publikus telefonszám</Label>

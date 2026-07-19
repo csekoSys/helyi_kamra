@@ -20,7 +20,7 @@ export default async function DashboardPage() {
 
   if (!profile) return null
 
-  const isProducer = profile.role === 'producer'
+  const isProducer = profile.is_producer
   const isApproved = profile.is_approved_by_admin
 
   // Fetch counts based on role

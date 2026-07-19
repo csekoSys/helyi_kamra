@@ -6,17 +6,22 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, Mail, Lock, User, Phone, Store, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function RegisterForm() {
-  const [role, setRole] = useState<'buyer' | 'producer'>('buyer')
+  const [isBuyer, setIsBuyer] = useState(true)
+  const [isProducer, setIsProducer] = useState(false)
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [farmName, setFarmName] = useState('')
+  
+  const [acceptTerms, setAcceptTerms] = useState(false)
+  const [acceptGdpr, setAcceptGdpr] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +29,14 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password || !name) return
+    if (!isBuyer && !isProducer) {
+      setError('Kérjük, válassz legalább egy szerepkört!')
+      return
+    }
+    if (!acceptTerms || !acceptGdpr) {
+      setError('A regisztrációhoz el kell fogadnod az ÁSZF-et és az Adatvédelmi tájékoztatót!')
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -33,12 +45,17 @@ export default function RegisterForm() {
     const formData = new FormData()
     formData.append('email', email)
     formData.append('password', password)
-    formData.append('role', role)
+    if (isBuyer) formData.append('isBuyer', 'on')
+    if (isProducer) formData.append('isProducer', 'on')
     formData.append('name', name)
     formData.append('phone', phone)
-    if (role === 'producer') {
+    
+    if (isProducer) {
       formData.append('farmName', farmName)
     }
+    
+    if (acceptTerms) formData.append('acceptTerms', 'on')
+    if (acceptGdpr) formData.append('acceptGdpr', 'on')
 
     try {
       const res = await register(null, formData)
@@ -81,15 +98,6 @@ export default function RegisterForm() {
           Hozd létre saját HelyiKamra profilodat
         </CardDescription>
       </CardHeader>
-      
-      <div className="px-6">
-        <Tabs defaultValue="buyer" className="w-full" onValueChange={(val) => setRole(val as 'buyer' | 'producer')}>
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="buyer" className="font-semibold text-xs">Vásárló leszek</TabsTrigger>
-            <TabsTrigger value="producer" className="font-semibold text-xs">Termelő vagyok</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
 
       <form onSubmit={handleSubmit} className="mt-2">
         <CardContent className="space-y-4">
@@ -99,24 +107,53 @@ export default function RegisterForm() {
             </div>
           )}
 
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">{role === 'producer' ? 'Kapcsolattartó neve' : 'Teljes név'}</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="name"
-                type="text"
-                placeholder={role === 'producer' ? 'Kovács János' : 'Szabó Anna'}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+          {/* Role Selection */}
+          <div className="space-y-3 p-4 bg-muted/50 rounded-lg border border-border">
+            <Label className="font-semibold text-sm">Milyen fiókot szeretnél létrehozni?</Label>
+            <div className="flex flex-col gap-3 mt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="role-buyer" 
+                  checked={isBuyer} 
+                  onCheckedChange={(checked) => setIsBuyer(checked as boolean)} 
+                />
+                <Label htmlFor="role-buyer" className="cursor-pointer font-medium text-sm leading-none">Vásárlóként szeretnék regisztrálni</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="role-producer" 
+                  checked={isProducer} 
+                  onCheckedChange={(checked) => setIsProducer(checked as boolean)} 
+                />
+                <Label htmlFor="role-producer" className="cursor-pointer font-medium text-sm leading-none">Kistermelőként (is) szeretném eladni a termékeimet</Label>
+              </div>
             </div>
           </div>
 
+          {/* Full Name (Always visible if either is checked, but label adapts) */}
+          {(isBuyer || isProducer) && (
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                {isBuyer && !isProducer ? 'Teljes név' : 
+                 isProducer && !isBuyer ? 'Kapcsolattartó neve' : 
+                 'Teljes név / Kapcsolattartó'}
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Kovács János"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           {/* Farm Name (Producer only) */}
-          {role === 'producer' && (
+          {isProducer && (
             <div className="space-y-2">
               <Label htmlFor="farmName">Gazdaság / Tanya megnevezése</Label>
               <div className="relative">
@@ -127,7 +164,7 @@ export default function RegisterForm() {
                   placeholder="pl. Aranykalász Családi Gazdaság"
                   value={farmName}
                   onChange={(e) => setFarmName(e.target.value)}
-                  required
+                  required={isProducer}
                 />
               </div>
             </div>
@@ -179,9 +216,48 @@ export default function RegisterForm() {
               />
             </div>
           </div>
+          
+          <div className="border-t border-border pt-4 mt-4 space-y-3">
+            <div className="flex flex-row items-start space-x-3">
+              <Checkbox 
+                id="terms" 
+                checked={acceptTerms} 
+                onCheckedChange={(checked) => setAcceptTerms(checked as boolean)} 
+                className="mt-1"
+                required
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label htmlFor="terms" className="text-sm font-medium leading-none cursor-pointer">
+                  Elfogadom az Általános Szerződési Feltételeket
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Elolvastam és elfogadom a HelyiKamra működési szabályzatát.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-row items-start space-x-3">
+              <Checkbox 
+                id="gdpr" 
+                checked={acceptGdpr} 
+                onCheckedChange={(checked) => setAcceptGdpr(checked as boolean)} 
+                className="mt-1"
+                required
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label htmlFor="gdpr" className="text-sm font-medium leading-none cursor-pointer">
+                  Elfogadom az Adatvédelmi tájékoztatót (GDPR)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Hozzájárulok a személyes adataim kezeléséhez.
+                </p>
+              </div>
+            </div>
+          </div>
+          
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" disabled={loading} className="w-full font-semibold text-sm">
+          <Button type="submit" disabled={loading || (!isBuyer && !isProducer) || !acceptTerms || !acceptGdpr} className="w-full font-semibold text-sm">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

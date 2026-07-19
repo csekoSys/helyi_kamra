@@ -24,7 +24,7 @@ export default async function MessagesPage({
   // Get user profile role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('is_buyer, is_producer')
     .eq('id', user.id)
     .single()
 
@@ -91,7 +91,7 @@ export default async function MessagesPage({
       messages={messages}
       currentUserId={user.id}
       selectedThreadId={threadId}
-      userRole={profile.role}
+      userRole={profile.is_producer ? 'producer' : 'buyer'}
     />
   )
 }

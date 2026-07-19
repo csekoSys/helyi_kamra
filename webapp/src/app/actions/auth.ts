@@ -13,10 +13,22 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   email: z.string().email('Érvénytelen e-mail cím'),
   password: z.string().min(6, 'A jelszónak legalább 6 karakterből kell állnia'),
-  role: z.enum(['buyer', 'producer']),
-  name: z.string().min(2, 'A név túl rövid'),
+  isBuyer: z.boolean(),
+  isProducer: z.boolean(),
+  name: z.string().optional(),
   phone: z.string().optional(),
   farmName: z.string().optional(),
+  acceptTerms: z.boolean().refine(val => val === true, 'Az ÁSZF elfogadása kötelező'),
+  acceptGdpr: z.boolean().refine(val => val === true, 'Az Adatvédelmi tájékoztató elfogadása kötelező'),
+}).refine(data => data.isBuyer || data.isProducer, {
+  message: 'Legalább egy szerepkört (Vásárló vagy Termelő) ki kell választani!',
+  path: ['isBuyer']
+}).refine(data => !data.isBuyer || (data.name && data.name.trim().length >= 2), {
+  message: 'Kérjük, add meg a teljes nevedet!',
+  path: ['name']
+}).refine(data => !data.isProducer || (data.farmName && data.farmName.trim().length >= 2), {
+  message: 'Kérjük, add meg a gazdaság nevét!',
+  path: ['farmName']
 })
 
 export async function login(prevState: any, formData: FormData) {
@@ -42,12 +54,19 @@ export async function login(prevState: any, formData: FormData) {
 export async function register(prevState: any, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const role = formData.get('role') as 'buyer' | 'producer'
-  const name = formData.get('name') as string
-  const phone = formData.get('phone') as string
-  const farmName = formData.get('farmName') as string
+  const isBuyer = formData.get('isBuyer') === 'on'
+  const isProducer = formData.get('isProducer') === 'on'
+  const acceptTerms = formData.get('acceptTerms') === 'on'
+  const acceptGdpr = formData.get('acceptGdpr') === 'on'
+  
+  const name = formData.get('name') as string || ''
+  const phone = formData.get('phone') as string || ''
+  const farmName = formData.get('farmName') as string || ''
 
-  const validation = registerSchema.safeParse({ email, password, role, name, phone, farmName })
+  const validation = registerSchema.safeParse({ 
+    email, password, isBuyer, isProducer, name, phone, farmName, acceptTerms, acceptGdpr 
+  })
+  
   if (!validation.success) {
     return { error: validation.error.issues[0].message }
   }
@@ -58,10 +77,14 @@ export async function register(prevState: any, formData: FormData) {
     password,
     options: {
       data: {
-        role,
-        name,
-        phone,
-        farm_name: role === 'producer' ? (farmName || 'Új Gazdaság') : name
+        isBuyer,
+        isProducer,
+        isAdmin: false,
+        name: name.trim() || 'Új Felhasználó',
+        phone: phone.trim(),
+        farmName: farmName.trim() || 'Új Gazdaság',
+        acceptTerms,
+        acceptGdpr
       }
     }
   })

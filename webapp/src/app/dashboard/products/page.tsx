@@ -17,11 +17,11 @@ export default async function ProductsPage() {
   // Get user profile and verify role is producer
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('is_buyer, is_producer')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'producer') {
+  if (!profile || !profile.is_producer) {
     redirect('/dashboard')
   }
 

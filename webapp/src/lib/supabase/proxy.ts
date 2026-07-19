@@ -54,11 +54,11 @@ export async function updateSession(request: NextRequest) {
     if (path.startsWith('/admin')) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('is_admin')
         .eq('id', claims.sub)
         .single()
 
-      if (!profile || profile.role !== 'admin') {
+      if (!profile || !profile.is_admin) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)

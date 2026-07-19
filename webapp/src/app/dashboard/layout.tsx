@@ -25,10 +25,10 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Get user role
+  // Get user role flags
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, is_approved_by_admin')
+    .select('is_buyer, is_producer, is_admin, is_approved_by_admin')
     .eq('id', user.id)
     .single()
 
@@ -36,7 +36,7 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  const role = profile.role
+  const { is_producer, is_buyer, is_admin } = profile
 
   const producerNav = [
     { name: 'Vezérlőpult', href: '/dashboard', icon: LayoutDashboard },
@@ -52,7 +52,8 @@ export default async function DashboardLayout({
     { name: 'Profilom', href: '/dashboard/profile', icon: User },
   ]
 
-  const navItems = role === 'producer' ? producerNav : buyerNav
+  // If producer, show producer nav (which includes all buyer things anyway)
+  const navItems = is_producer ? producerNav : buyerNav
 
   return (
     <div className="flex-1 flex flex-col md:flex-row min-h-[calc(100vh-4rem)]">
@@ -61,7 +62,7 @@ export default async function DashboardLayout({
         <div className="flex flex-col gap-1">
           <h2 className="font-bold text-lg text-foreground">Vezérlőpult</h2>
           <span className="text-xs text-primary font-semibold uppercase tracking-wider">
-            {role === 'producer' ? 'Termelői fiók' : 'Vásárlói fiók'}
+            {is_producer ? (is_buyer ? 'Termelői / Vásárlói' : 'Termelői fiók') : 'Vásárlói fiók'}
           </span>
         </div>
 
@@ -85,7 +86,7 @@ export default async function DashboardLayout({
       {/* Navigation - Mobile Top Bar / Drawer */}
       <div className="md:hidden border-b border-border bg-card p-4 flex items-center justify-between">
         <span className="font-bold text-sm text-foreground">
-          {role === 'producer' ? 'Termelői Vezérlőpult' : 'Vásárlói Vezérlőpult'}
+          {is_producer ? 'Termelői Vezérlőpult' : 'Vásárlói Vezérlőpult'}
         </span>
         <Sheet>
           <SheetTrigger className={buttonVariants({ variant: "outline", size: "icon" }) + " h-9 w-9 cursor-pointer"}>
@@ -95,7 +96,7 @@ export default async function DashboardLayout({
             <div className="flex flex-col gap-1">
               <h2 className="font-bold text-lg text-foreground">HelyiKamra</h2>
               <span className="text-xs text-primary font-bold uppercase">
-                {role === 'producer' ? 'Termelő' : 'Vásárló'}
+                {is_producer ? 'Termelő' : 'Vásárló'}
               </span>
             </div>
             <nav className="flex flex-col gap-1">

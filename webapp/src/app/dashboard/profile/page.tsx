@@ -27,7 +27,7 @@ export default async function ProfilePage() {
 
   // Format initial data based on role
   const initialData: Record<string, any> = {}
-  if (profile.role === 'producer') {
+  if (profile.is_producer) {
     initialData.farm_name = profile.producer_profiles?.farm_name || ''
     initialData.bio = profile.producer_profiles?.bio || ''
     initialData.phone = profile.producer_profiles?.phone || ''
@@ -44,7 +44,7 @@ export default async function ProfilePage() {
         <p className="text-xs text-muted-foreground mt-0.5">Saját adataid kezelése</p>
       </div>
 
-      <ProfileForm role={profile.role} initialData={initialData} />
+      <ProfileForm isBuyer={profile.is_buyer} isProducer={profile.is_producer} isAdmin={profile.is_admin} initialData={initialData} />
     </div>
   )
 }

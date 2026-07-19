@@ -39,18 +39,16 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
     notFound()
   }
 
-  // Check role of current user
-  let userRole: string | null = null
+  // Check permissions of current user
   let isAdmin = false
   if (user) {
     const { data: viewerProfile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('id', user.id)
       .single()
     
-    userRole = viewerProfile?.role || null
-    isAdmin = userRole === 'admin'
+    isAdmin = !!viewerProfile?.is_admin
   }
 
   const isOwner = user?.id === id
@@ -75,100 +73,108 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
     .eq('producer_id', id)
 
   // Map markers for Leaflet map
+  const extractCity = (address: string) => {
+    if (!address) return '';
+    const parts = address.split(',');
+    return parts.length > 1 && !parts[0].match(/\d{4}/) && parts[1].match(/\d{4}/) ? parts[1].trim() : parts[0].trim();
+  }
+
+  const isAuthenticated = !!user;
+  const showPhone = isAuthenticated && (profile.producer_profiles.is_phone_public || isOwner || isAdmin);
+
   const markers: MapMarker[] = (locations || []).map((loc: any) => ({
     id: loc.id,
     name: loc.location_type === 'farm' ? 'Tanya / Telephely' : 'Átvételi pont / Piac',
     lat: loc.latitude,
     lng: loc.longitude,
     type: 'producer',
-    address: loc.address,
+    address: isAuthenticated ? loc.address : `${extractCity(loc.address)} (Pontos cím bejelentkezés után)`,
     radius_km: loc.radius_km,
     info: loc.delivery_text || undefined,
   }))
 
-  const showPhone = profile.producer_profiles.is_phone_public || isOwner || isAdmin
-
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 md:px-6 py-12 max-w-7xl relative">
+      {/* Background glow */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none" />
+
       {/* Alert if not approved yet */}
       {!profile.is_approved_by_admin && (
-        <div className="mb-6 p-4 border border-amber-300 bg-amber-50 rounded-xl flex gap-3 text-amber-800 text-sm font-medium">
+        <div className="mb-8 p-4 border border-amber-500/20 bg-amber-500/10 rounded-2xl flex gap-3 text-amber-300 text-sm font-semibold">
           <AlertCircle className="h-5 w-5 shrink-0" />
-          <div>
-            Ez a profil még jóváhagyásra vár az adminisztrátorok részéről. Nyilvánosan még nem kereshető.
-          </div>
+          <span>Ez a profil jóváhagyásra vár az adminisztrátor által. Jelenleg csak Ön látja.</span>
         </div>
       )}
 
-      {/* Hero card */}
-      <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start justify-between mb-8">
-        <div className="flex-1 flex flex-col gap-3">
-          <span className="text-xs font-bold text-primary tracking-wider uppercase">Kistermelő</span>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-heading">
+      {/* Producer header info */}
+      <div className="glass-card p-6 md:p-10 rounded-3xl mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
+        <div className="flex flex-col gap-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.04] text-primary border border-white/[0.08] w-fit">
+            <Store className="h-3.5 w-3.5" /> Kistermelő
+          </span>
+          <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">
             {profile.producer_profiles.farm_name}
           </h1>
-          <p className="text-sm leading-relaxed text-muted-foreground max-w-2xl">
-            {profile.producer_profiles.bio || 'Még nincs bemutatkozás megadva.'}
+          <p className="text-white/60 text-sm max-w-xl leading-relaxed">
+            {profile.producer_profiles.bio || 'Nincs bemutatkozás megadva.'}
           </p>
-
-          <div className="flex flex-wrap gap-4 mt-2 text-xs font-medium text-muted-foreground">
-            {showPhone && profile.producer_profiles.phone && (
-              <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full">
-                <Phone className="h-3.5 w-3.5 text-primary" /> {profile.producer_profiles.phone}
-              </span>
-            )}
-            <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full">
-              <ShoppingBag className="h-3.5 w-3.5 text-primary" /> {products?.length || 0} aktív termék
-            </span>
-          </div>
         </div>
 
-        {isOwner && (
-          <Badge variant="outline" className="text-primary border-primary bg-primary/5 self-start">
-            Saját Adatlap
-          </Badge>
-        )}
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          {isAuthenticated ? (
+            <div className="flex flex-col gap-2 bg-white/[0.02] border border-white/[0.06] p-4 rounded-2xl text-xs text-white/50 w-full sm:w-auto shrink-0">
+              <span className="font-bold text-white mb-1">Elérhetőségek</span>
+              {showPhone ? (
+                <span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-primary" /> {profile.producer_profiles.phone}</span>
+              ) : (
+                <span className="flex items-center gap-2 italic"><Phone className="h-3.5 w-3.5 text-white/30" /> Nem publikus</span>
+              )}
+              <span className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-primary" /> {profile.email}</span>
+            </div>
+          ) : (
+            <div className="bg-white/[0.02] border border-white/[0.06] p-4 rounded-2xl text-xs text-white/40 text-center w-full sm:w-auto">
+              Kattints a kapcsolatfelvételre az elérhetőségek megtekintéséhez.
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Products Column */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Carrot className="h-5 w-5 text-primary" />
-              Kínálatunk
-            </h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Friss és elérhető termékek listája</p>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Products */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          <h2 className="text-2xl font-extrabold text-white flex items-center gap-3">
+            <ShoppingBag className="h-6 w-6 text-primary" />
+            Termékek Kínálata
+          </h2>
 
           {products && products.length > 0 ? (
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-6">
               {products.map((prod) => (
-                <Card key={prod.id} className="shadow-sm flex flex-col justify-between overflow-hidden">
-                  <div className="h-40 bg-muted flex items-center justify-center relative">
+                <Card key={prod.id} className="glass-card glass-card-hover flex flex-col justify-between overflow-hidden rounded-2xl">
+                  <div className="h-44 bg-white/[0.01] flex items-center justify-center relative border-b border-white/[0.04]">
                     {prod.image_url ? (
                       <img src={prod.image_url} alt={prod.name} className="object-cover w-full h-full" />
                     ) : (
-                      <Carrot className="h-12 w-12 text-primary/10" />
+                      <Carrot className="h-14 w-14 text-primary/10" />
                     )}
                     {prod.categories && (
-                      <Badge className="absolute top-2 left-2 text-[10px]" variant="secondary">
+                      <Badge className="absolute top-3 left-3 text-[10px] font-bold bg-white/[0.05] border border-white/[0.08] text-primary" variant="secondary">
                         {prod.categories.name}
                       </Badge>
                     )}
                   </div>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-base font-bold">{prod.name}</CardTitle>
-                    <CardDescription className="text-xs line-clamp-2 mt-1">
+                  <CardHeader className="p-5 pb-2">
+                    <CardTitle className="text-lg font-bold text-white">{prod.name}</CardTitle>
+                    <CardDescription className="text-sm text-white/50 line-clamp-2 mt-1 leading-relaxed">
                       {prod.description || 'Nincs leírás.'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0 border-t border-border mt-3 flex items-center justify-between text-sm">
-                    <span className="font-extrabold text-primary text-base">
-                      {Math.round(prod.price)} Ft <span className="text-xs font-normal text-muted-foreground">/ {prod.unit}</span>
+                  <CardContent className="p-5 pt-0 border-t border-white/[0.04] mt-4 flex items-center justify-between text-sm">
+                    <span className="font-extrabold text-primary text-lg">
+                      {Math.round(prod.price)} Ft <span className="text-xs font-semibold text-white/40">/ {prod.unit}</span>
                     </span>
                     {prod.tags && (
-                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase font-semibold">
+                      <span className="text-[10px] text-white/60 bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-full uppercase font-bold tracking-wider">
                         {prod.tags.split(',')[0]}
                       </span>
                     )}
@@ -177,22 +183,22 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
               ))}
             </div>
           ) : (
-            <Card className="p-8 text-center border-dashed">
-              <Carrot className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-              <p className="font-semibold text-muted-foreground">Jelenleg nincs aktív termék feltöltve.</p>
+            <Card className="glass-card p-12 text-center border-dashed border-white/[0.08]">
+              <Carrot className="h-16 w-16 text-primary/10 mx-auto mb-4" />
+              <p className="font-bold text-white text-lg">Jelenleg nincs aktív termék feltöltve.</p>
             </Card>
           )}
         </div>
 
         {/* Side Details Column */}
-        <div className="flex flex-col gap-8">
+        <div className="lg:col-span-4 flex flex-col gap-8">
           {/* Location Map */}
-          <div className="flex flex-col gap-3">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-extrabold text-white flex items-center gap-3">
+              <MapPin className="h-6 w-6 text-primary" />
               Helyszínek & Átvétel
             </h2>
-            <div className="h-[250px] w-full rounded-xl overflow-hidden shadow-inner">
+            <div className="h-[250px] w-full rounded-2xl overflow-hidden border border-white/[0.08] shadow-inner relative z-10">
               {locations && locations.length > 0 ? (
                 <DynamicMap 
                   center={[locations[0].latitude, locations[0].longitude]} 
@@ -201,7 +207,7 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
                   interactive={false} 
                 />
               ) : (
-                <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground text-center p-4">
+                <div className="h-full w-full bg-white/[0.02] flex items-center justify-center text-sm text-white/40 text-center p-6 border border-white/[0.08] rounded-2xl">
                   Nincs telephely vagy átvételi hely megadva.
                 </div>
               )}
@@ -211,15 +217,17 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
             {locations && locations.length > 0 && (
               <div className="flex flex-col gap-3 mt-2">
                 {locations.map((loc: any) => (
-                  <div key={loc.id} className="text-xs border-l-2 border-primary pl-3 py-1 flex flex-col gap-1">
-                    <div className="font-semibold flex items-center gap-1">
-                      <Store className="h-3.5 w-3.5 text-primary" />
+                  <div key={loc.id} className="text-sm border-l-2 border-primary pl-4 py-1.5 flex flex-col gap-1.5">
+                    <div className="font-bold flex items-center gap-2 text-white/90">
+                      <Store className="h-4 w-4 text-primary" />
                       {loc.location_type === 'farm' ? 'Gazdaság / Tanya' : 'Kiszállítási Pont'} 
                       {loc.radius_km > 0 && ` (${loc.radius_km} km körzetben)`}
                     </div>
-                    <div className="text-foreground">{loc.address}</div>
-                    {loc.schedule_info && <div className="text-muted-foreground italic">{loc.schedule_info}</div>}
-                    {loc.delivery_text && <div className="text-muted-foreground">{loc.delivery_text}</div>}
+                    <div className="text-white/60">
+                      {isAuthenticated ? loc.address : `${extractCity(loc.address)} (Pontos cím bejelentkezés után)`}
+                    </div>
+                    {loc.schedule_info && <div className="text-white/40 text-xs italic">{loc.schedule_info}</div>}
+                    {loc.delivery_text && <div className="text-white/40 text-xs">{loc.delivery_text}</div>}
                   </div>
                 ))}
               </div>
@@ -231,7 +239,7 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
             producerId={id} 
             farmName={profile.producer_profiles.farm_name} 
             isAuthenticated={!!user}
-            userRole={userRole}
+            isOwner={isOwner}
           />
         </div>
       </div>

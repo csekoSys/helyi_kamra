@@ -188,3 +188,48 @@ export async function deleteProduct(id: string) {
   revalidatePath('/dashboard/products')
   return { success: 'Termék törölve!' }
 }
+
+export async function uploadProductImage(base64Data: string, fileName: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Nem vagy bejelentkezve' }
+
+  try {
+    // 1. Ensure bucket exists (ignores if already exists)
+    await supabase.storage.createBucket('product-images', {
+      public: true,
+      fileSizeLimit: 5242880, // 5MB
+    })
+  } catch (e) {
+    // Bucket might already exist
+  }
+
+  try {
+    // 2. Convert base64 to buffer
+    const buffer = Buffer.from(base64Data, 'base64')
+    const extension = fileName.split('.').pop() || 'jpg'
+    const filePath = `${user.id}/${Date.now()}.${extension}`
+
+    // 3. Upload file
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, buffer, {
+        contentType: `image/${extension === 'png' ? 'png' : extension === 'webp' ? 'webp' : 'jpeg'}`,
+        upsert: true
+      })
+
+    if (uploadError) {
+      return { error: 'Sikertelen feltöltés: ' + uploadError.message }
+    }
+
+    // 4. Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath)
+
+    return { publicUrl }
+  } catch (err: any) {
+    return { error: 'Feltöltési hiba: ' + err.message }
+  }
+}

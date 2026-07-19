@@ -7,18 +7,15 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Loader2, Plus, MapPin, Trash2, Home, Store, Truck } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Loader2, MapPin, Trash2, Home, Store, Truck, Plus } from 'lucide-react'
 import { MapMarker } from '@/components/Map'
 
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
   loading: () => (
-    <Card className="w-full h-[350px] flex items-center justify-center bg-muted">
-      <p className="text-muted-foreground animate-pulse">Térkép betöltése...</p>
+    <Card className="w-full h-[350px] flex items-center justify-center bg-white/[0.01] border-white/[0.08]">
+      <p className="text-white/40 animate-pulse text-sm">Térkép betöltése...</p>
     </Card>
   ),
 })
@@ -50,7 +47,7 @@ interface LocationsClientProps {
 
 export default function LocationsClient({ locations, markets }: LocationsClientProps) {
   const [loading, setLoading] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [isFormVisible, setIsFormVisible] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Map settings
@@ -81,7 +78,6 @@ export default function LocationsClient({ locations, markets }: LocationsClientP
 
   // Form helper: click on map updates coordinates
   const handleMapClick = (lat: number, lng: number) => {
-    // Only update if manually placing coordinate
     if (selectedMarketId === 'none') {
       setLatitude(parseFloat(lat.toFixed(6)))
       setLongitude(parseFloat(lng.toFixed(6)))
@@ -102,7 +98,6 @@ export default function LocationsClient({ locations, markets }: LocationsClientP
       setLatitude(market.latitude)
       setLongitude(market.longitude)
       setScheduleInfo(market.schedule)
-      // Focus map to market
       setCenter([market.latitude, market.longitude])
       setZoom(14)
     }
@@ -118,7 +113,7 @@ export default function LocationsClient({ locations, markets }: LocationsClientP
     setScheduleInfo('')
     setSelectedMarketId('none')
     setError(null)
-    setOpen(true)
+    setIsFormVisible(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,7 +137,7 @@ export default function LocationsClient({ locations, markets }: LocationsClientP
       if (res.error) {
         setError(res.error)
       } else {
-        setOpen(false)
+        setIsFormVisible(false)
       }
     } catch (err) {
       setError('Hiba történt a mentés során.')
@@ -165,235 +160,248 @@ export default function LocationsClient({ locations, markets }: LocationsClientP
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8 relative max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight font-heading">Helyszíneim & Elérhetőség</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Állítsd be a telephelyed és add meg, hol vagy elérhető a vásárlók számára.
-          </p>
+          <h1 className="text-3xl font-black text-white leading-tight">Helyszíneim</h1>
+          <p className="text-white/50 text-sm mt-1">Itt adhatod hozzá a telephelyeidet és piacaidat.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger onClick={handleOpenAdd} className={buttonVariants() + " font-semibold gap-1.5 shadow-sm text-sm cursor-pointer"}>
-            <Plus className="h-4 w-4" /> Új helyszín hozzáadása
-          </DialogTrigger>
-          <DialogContent className="max-w-xl border-border">
-            <DialogHeader>
-              <DialogTitle className="font-bold">Helyszín hozzáadása</DialogTitle>
-              <DialogDescription>
-                Add meg a címet vagy koordinátákat, illetve csatlakozhatsz meglévő piachoz is.
-              </DialogDescription>
-            </DialogHeader>
+        {!isFormVisible && (
+          <Button onClick={handleOpenAdd} className="h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-0 shadow-lg cursor-pointer">
+            <Plus className="h-5 w-5 mr-2" /> Új helyszín hozzáadása
+          </Button>
+        )}
+      </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 py-2">
+      {isFormVisible && (
+        <Card className="glass-card shadow-2xl border-white/[0.08] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="border-b border-white/[0.06] pb-6">
+            <CardTitle className="text-xl font-bold text-white">
+              Új helyszín hozzáadása
+            </CardTitle>
+            <CardDescription className="text-white/50">
+              Töltsd ki az alábbi adatokat. A koordinátákat a térképre való kattintással vagy piac kiválasztásával is megadhatod.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="p-3 text-xs font-semibold bg-destructive/10 text-destructive rounded-lg">
+                <div className="p-4 text-sm font-semibold bg-destructive/10 text-destructive rounded-xl border border-destructive/20">
                   {error}
                 </div>
               )}
 
-              {/* Location Type */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="loc-type">Helyszín típusa</Label>
-                <Select value={locationType} onValueChange={(val) => {
-                  setLocationType(val || 'farm')
-                  // Reset market select if switching from market
-                  if (val !== 'market') handleMarketChange('none')
-                }}>
-                  <SelectTrigger id="loc-type">
-                    <SelectValue placeholder="Típus kiválasztása..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="farm">Saját Gazdaság / Tanya (Fix helyszín)</SelectItem>
-                    <SelectItem value="market">Csatlakozás meglévő piachoz</SelectItem>
-                    <SelectItem value="delivery_point">Átvételi / Kiszállítási pont</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Market selection (if type is market) */}
-              {locationType === 'market' && (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="market-select">Válassz piacot a listából</Label>
-                  <Select value={selectedMarketId} onValueChange={(val) => handleMarketChange(val || 'none')}>
-                    <SelectTrigger id="market-select">
-                      <SelectValue placeholder="Piacok listája..." />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Location Type */}
+                <div className="flex flex-col gap-2.5">
+                  <Label htmlFor="loc-type" className="font-bold text-white/80">Helyszín típusa</Label>
+                  <Select value={locationType} onValueChange={(val) => {
+                    setLocationType(val || 'farm')
+                    if (val !== 'market') handleMarketChange('none')
+                  }}>
+                    <SelectTrigger id="loc-type" className="h-14 rounded-xl border-white/[0.08] bg-white/[0.01] text-white focus:border-primary/50">
+                      <SelectValue placeholder="Típus kiválasztása..." />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Egyik sem (egyéni cím megadása)</SelectItem>
-                      {markets.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name} ({m.address})
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="border-white/[0.08] bg-card/90 backdrop-blur-xl">
+                      <SelectItem value="farm">Saját Gazdaság / Tanya (Fix helyszín)</SelectItem>
+                      <SelectItem value="market">Csatlakozás meglévő piachoz</SelectItem>
+                      <SelectItem value="delivery_point">Átvételi / Kiszállítási pont</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              {/* Address */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="address">Pontos cím</Label>
-                <Input
-                  id="address"
-                  placeholder="pl. 6720 Szeged, Oskola utca 5."
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  disabled={selectedMarketId !== 'none'}
-                  required
-                />
-              </div>
+                {/* Market selection (if type is market) */}
+                {locationType === 'market' && (
+                  <div className="flex flex-col gap-2.5">
+                    <Label htmlFor="market-select" className="font-bold text-white/80">Válassz piacot a listából</Label>
+                    <Select value={selectedMarketId} onValueChange={(val) => handleMarketChange(val || 'none')}>
+                      <SelectTrigger id="market-select" className="h-14 rounded-xl border-white/[0.08] bg-white/[0.01] text-white focus:border-primary/50">
+                        <SelectValue placeholder="Piacok listája..." />
+                      </SelectTrigger>
+                      <SelectContent className="border-white/[0.08] bg-card/90 backdrop-blur-xl">
+                        <SelectItem value="none">Egyik sem (egyéni cím megadása)</SelectItem>
+                        {markets.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name} ({m.address})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-              {/* Coordinates */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="lat">Szélesség (GPS Lat)</Label>
+                {/* Address */}
+                <div className="md:col-span-2 flex flex-col gap-2.5">
+                  <Label htmlFor="address" className="font-bold text-white/80">Pontos cím</Label>
                   <Input
-                    id="lat"
-                    type="number"
-                    step="0.000001"
-                    value={latitude}
-                    onChange={(e) => setLatitude(parseFloat(e.target.value))}
+                    id="address"
+                    placeholder="pl. 6720 Szeged, Oskola utca 5."
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
                     disabled={selectedMarketId !== 'none'}
                     required
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="lng">Hosszúság (GPS Lng)</Label>
+
+                {/* Coordinates */}
+                <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                  <div className="flex flex-col gap-2.5">
+                    <Label htmlFor="lat" className="font-bold text-white/80">Szélesség (GPS Lat)</Label>
+                    <Input
+                      id="lat"
+                      type="number"
+                      step="0.000001"
+                      value={latitude}
+                      onChange={(e) => setLatitude(parseFloat(e.target.value))}
+                      disabled={selectedMarketId !== 'none'}
+                      required
+                      className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <Label htmlFor="lng" className="font-bold text-white/80">Hosszúság (GPS Lng)</Label>
+                    <Input
+                      id="lng"
+                      type="number"
+                      step="0.000001"
+                      value={longitude}
+                      onChange={(e) => setLongitude(parseFloat(e.target.value))}
+                      disabled={selectedMarketId !== 'none'}
+                      required
+                      className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                {/* Helper map */}
+                <div className="md:col-span-2 flex flex-col gap-2">
+                  <Label className="font-bold text-white/80">Hely kijelölése a térképen</Label>
+                  <div className="h-[250px] w-full border border-white/[0.08] rounded-2xl overflow-hidden shadow-inner relative z-10">
+                    <Map
+                      center={center}
+                      zoom={zoom}
+                      markers={latitude && longitude ? [{ id: 'picker', name: 'Kijelölt hely', lat: latitude, lng: longitude, type: 'center' }] : []}
+                      onPositionSelect={handleMapClick}
+                    />
+                  </div>
+                  <span className="text-[10px] text-white/40 block mt-1">
+                    {selectedMarketId === 'none' 
+                      ? 'Tipp: Kattints a térképre a pontos koordináták beállításához!' 
+                      : 'A koordináták a kiválasztott piachoz vannak rögzítve.'}
+                  </span>
+                </div>
+
+                {/* Radius (For delivery points) */}
+                {locationType === 'delivery_point' && (
+                  <div className="flex flex-col gap-2.5 md:col-span-2">
+                    <Label htmlFor="radius" className="font-bold text-white/80">Kiszállítási hatósugár (km)</Label>
+                    <Input
+                      id="radius"
+                      type="number"
+                      value={radiusKm}
+                      onChange={(e) => setRadiusKm(e.target.value)}
+                      placeholder="pl. 15 (0 ha csak egy fix pont)"
+                      className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
+                    />
+                  </div>
+                )}
+
+                {/* Schedule and delivery info */}
+                <div className="flex flex-col gap-2.5 md:col-span-2">
+                  <Label htmlFor="schedule" className="font-bold text-white/80">Nyitvatartás / Átvételi idősáv</Label>
                   <Input
-                    id="lng"
-                    type="number"
-                    step="0.000001"
-                    value={longitude}
-                    onChange={(e) => setLongitude(parseFloat(e.target.value))}
+                    id="schedule"
+                    placeholder="pl. Szombat reggel 8-12, vagy egyedi egyeztetéssel"
+                    value={scheduleInfo}
+                    onChange={(e) => setScheduleInfo(e.target.value)}
                     disabled={selectedMarketId !== 'none'}
-                    required
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
-              </div>
 
-              {/* Helper map */}
-              <div className="h-[200px] w-full border rounded-lg overflow-hidden">
-                <Map
-                  center={center}
-                  zoom={zoom}
-                  markers={latitude && longitude ? [{ id: 'picker', name: 'Kijelölt hely', lat: latitude, lng: longitude, type: 'center' }] : []}
-                  onPositionSelect={handleMapClick}
-                />
-                <span className="text-[10px] text-muted-foreground block p-1 bg-muted/30">
-                  {selectedMarketId === 'none' 
-                    ? 'Kattints a térképre a pontos koordináták beállításához!' 
-                    : 'A koordináták a kiválasztott piachoz vannak rögzítve.'}
-                </span>
-              </div>
-
-              {/* Radius (For delivery points) */}
-              {locationType === 'delivery_point' && (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="radius">Kiszállítási hatósugár (km)</Label>
+                <div className="flex flex-col gap-2.5 md:col-span-2">
+                  <Label htmlFor="delivery-text" className="font-bold text-white/80">Átvételi megjegyzés</Label>
                   <Input
-                    id="radius"
-                    type="number"
-                    value={radiusKm}
-                    onChange={(e) => setRadiusKm(e.target.value)}
-                    placeholder="pl. 15 (0 ha csak egy fix pont)"
+                    id="delivery-text"
+                    placeholder="pl. A piac 3-as asztalánál, vagy tanya kapucsengő..."
+                    value={deliveryText}
+                    onChange={(e) => setDeliveryText(e.target.value)}
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
-              )}
-
-              {/* Schedule and delivery info */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="schedule">Nyitvatartás / Átvételi idősáv</Label>
-                <Input
-                  id="schedule"
-                  placeholder="pl. Szombat reggel 8-12, vagy egyedi egyeztetéssel"
-                  value={scheduleInfo}
-                  onChange={(e) => setScheduleInfo(e.target.value)}
-                  disabled={selectedMarketId !== 'none'}
-                />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="delivery-text">Átvételi megjegyzés</Label>
-                <Input
-                  id="delivery-text"
-                  placeholder="pl. A piac 3-as asztalánál, vagy tanya kapucsengő..."
-                  value={deliveryText}
-                  onChange={(e) => setDeliveryText(e.target.value)}
-                />
-              </div>
-
-              <DialogFooter className="border-t border-border pt-4">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Mégse</Button>
-                <Button type="submit" disabled={loading} className="font-semibold">
+              <CardFooter className="border-t border-white/[0.06] pt-6 px-0 pb-0 gap-3 justify-end">
+                <Button type="button" variant="outline" onClick={() => setIsFormVisible(false)} className="h-12 px-6 rounded-xl border-white/10 hover:bg-white/[0.08] text-white hover:text-white cursor-pointer">
+                  Mégse
+                </Button>
+                <Button type="submit" disabled={loading} className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-0 text-white cursor-pointer">
                   {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Mentés
                 </Button>
-              </DialogFooter>
+              </CardFooter>
             </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Main View: Split Map + Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-6 flex flex-col gap-4">
-          <h3 className="font-bold text-lg">Regisztrált helyszíneid ({locations.length})</h3>
+      {!isFormVisible && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-6 flex flex-col gap-6">
+            <h3 className="font-extrabold text-xl text-white">Regisztrált helyszíneid ({locations.length})</h3>
 
-          {locations.length > 0 ? (
-            <div className="border border-border bg-card rounded-xl overflow-hidden shadow-sm">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Típus</TableHead>
-                    <TableHead>Cím</TableHead>
-                    <TableHead className="text-right">Törlés</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {locations.map((loc) => (
-                    <TableRow key={loc.id}>
-                      <TableCell className="font-semibold flex items-center gap-1.5 text-xs text-foreground">
-                        {loc.location_type === 'farm' && <Home className="h-4 w-4 text-primary" />}
-                        {loc.location_type === 'market' && <Store className="h-4 w-4 text-primary" />}
-                        {loc.location_type === 'delivery_point' && <Truck className="h-4 w-4 text-primary" />}
-                        {loc.location_type === 'farm' ? 'Gazdaság' : loc.location_type === 'market' ? 'Piac' : 'Átvétel'}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground leading-relaxed max-w-[200px] truncate">
-                        {loc.address}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(loc.id)}
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <Card className="p-8 text-center border-dashed">
-              <MapPin className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Még nincs rögzített helyszíned.</p>
-            </Card>
-          )}
+            {locations.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {locations.map((loc) => (
+                  <Card key={loc.id} className="glass-card p-5 border-white/[0.08] hover:border-white/15 transition-all duration-300 shadow-xl">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex flex-col gap-2">
+                        <div className="font-bold flex items-center gap-2 text-sm text-primary">
+                          {loc.location_type === 'farm' && <Home className="h-4 w-4" />}
+                          {loc.location_type === 'market' && <Store className="h-4 w-4" />}
+                          {loc.location_type === 'delivery_point' && <Truck className="h-4 w-4" />}
+                          {loc.location_type === 'farm' ? 'Gazdaság' : loc.location_type === 'market' ? 'Piac' : 'Átvételi pont'}
+                        </div>
+                        <div className="text-base font-extrabold text-white leading-tight">
+                          {loc.address}
+                        </div>
+                        {loc.schedule_info && (
+                          <div className="text-xs text-white/50 italic mt-1">
+                            Nyitva: {loc.schedule_info}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDelete(loc.id)}
+                        className="h-11 w-11 rounded-lg flex-shrink-0 cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="glass-card p-12 text-center border-dashed border-white/[0.08]">
+                <MapPin className="h-16 w-16 text-primary/20 mx-auto mb-4" />
+                <p className="font-bold text-white text-lg">Még nincs rögzített helyszíned.</p>
+                <p className="text-sm text-white/50 mt-2 max-w-xs mx-auto leading-relaxed">Add meg a tanyád koordinátáit vagy csatlakozz piacokhoz a fenti gombbal.</p>
+              </Card>
+            )}
+          </div>
+
+          <div className="lg:col-span-6 h-[400px] lg:h-[500px] rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl relative z-10">
+            <Map 
+              center={locations.length > 0 ? [locations[0].latitude, locations[0].longitude] : center} 
+              zoom={11} 
+              markers={mapMarkers} 
+            />
+          </div>
         </div>
-
-        {/* Map visualization of current locations */}
-        <div className="lg:col-span-6 h-[400px]">
-          <Map
-            center={locations.length > 0 ? [locations[0].latitude, locations[0].longitude] : center}
-            zoom={locations.length > 0 ? 12 : 9}
-            markers={mapMarkers}
-          />
-        </div>
-      </div>
+      )}
     </div>
   )
 }

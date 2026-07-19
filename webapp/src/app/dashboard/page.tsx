@@ -60,25 +60,28 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl">
+    <div className="flex flex-col gap-8 max-w-4xl relative">
+      {/* Glow highlight */}
+      <div className="absolute top-[-20%] left-[-10%] w-[300px] h-[300px] rounded-full bg-emerald-500/5 blur-[80px] pointer-events-none" />
+
       {/* Welcome Banner */}
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight font-heading">
+        <h1 className="text-3xl md:text-4xl font-black text-white leading-tight">
           Szia, {isProducer ? profile.producer_profiles?.farm_name : profile.buyer_profiles?.name}!
         </h1>
-        <p className="text-muted-foreground mt-1">Üdvözlünk a HelyiKamra vezérlőpultodon.</p>
+        <p className="text-white/50 mt-2 text-base">Üdvözlünk a HelyiKamra vezérlőpultodon.</p>
       </div>
 
       {/* Admin Approval Warning for Producers */}
       {isProducer && !isApproved && (
-        <div className="p-5 border border-amber-300 bg-amber-50 rounded-xl flex gap-4 text-amber-800">
-          <AlertCircle className="h-6 w-6 shrink-0 mt-0.5" />
-          <div className="flex flex-col gap-1.5 text-sm">
-            <h4 className="font-bold">Profil jóváhagyása függőben</h4>
-            <p className="leading-relaxed">
+        <div className="p-6 border border-amber-500/20 bg-amber-500/10 rounded-2xl flex gap-4 text-amber-200 shadow-xl">
+          <AlertCircle className="h-6 w-6 shrink-0 mt-0.5 text-amber-400" />
+          <div className="flex flex-col gap-2 text-sm leading-relaxed">
+            <h4 className="font-extrabold text-base text-amber-300">Profil jóváhagyása függőben</h4>
+            <p className="text-white/70">
               Az adatlapod még ellenőrzésre vár. Ahhoz, hogy a vásárlók keresni tudjanak a térképen, az adminisztrátoroknak jóvá kell hagyniuk a profilodat.
             </p>
-            <p className="font-semibold text-xs mt-1">
+            <p className="font-bold text-xs mt-1 bg-white/[0.04] p-2 rounded-lg border border-white/[0.06] text-amber-300 w-fit">
               Teendő: Kérjük, tölts fel legalább egy terméket és egy helyszínt (telephelyet), hogy elvégezhessük a jóváhagyást!
             </p>
           </div>
@@ -86,8 +89,8 @@ export default async function DashboardPage() {
       )}
 
       {isProducer && isApproved && (
-        <div className="p-4 border border-green-200 bg-green-50/20 rounded-xl flex gap-3 text-green-800 text-sm font-medium">
-          <CheckCircle className="h-5 w-5 shrink-0" />
+        <div className="p-5 border border-emerald-500/25 bg-emerald-500/5 rounded-2xl flex gap-3 text-primary text-sm font-bold shadow-lg">
+          <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
           A profilod aktív és kereshető a térképen a vásárlók számára!
         </div>
       )}
@@ -96,65 +99,66 @@ export default async function DashboardPage() {
       <div className="grid sm:grid-cols-3 gap-6">
         {isProducer && (
           <>
-            <Card className="shadow-sm">
+            <Card className="glass-card shadow-2xl border-white/[0.08]">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-bold">Saját Termékek</CardTitle>
+                <CardTitle className="text-sm font-bold text-white/70">Saját Termékek</CardTitle>
                 <Carrot className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-extrabold">{productsCount}</div>
-                <div className="flex items-center gap-1.5 mt-2">
-                  <Badge variant={productsCount >= 20 ? 'destructive' : 'secondary'} className="text-[10px]">
+                <div className="text-3xl font-black text-white">{productsCount}</div>
+                <div className="flex items-center gap-1.5 mt-3">
+                  <Badge className="text-[10px] font-bold bg-white/[0.04] text-primary border border-white/[0.06] rounded-md">
                     {productsCount}/20 darab
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">ingyenes limit</span>
+                  <span className="text-[10px] text-white/40">ingyenes limit</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm">
+            <Card className="glass-card shadow-2xl border-white/[0.08]">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-bold">Helyszínek</CardTitle>
+                <CardTitle className="text-sm font-bold text-white/70">Helyszínek</CardTitle>
                 <MapPin className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-extrabold">{locationsCount}</div>
-                <p className="text-[10px] text-muted-foreground mt-2">Telephelyek és piacok száma</p>
+                <div className="text-3xl font-black text-white">{locationsCount}</div>
+                <p className="text-[10px] text-white/40 mt-3">Telephelyek és piacok száma</p>
               </CardContent>
             </Card>
           </>
         )}
 
         {!isProducer && (
-          <Card className="shadow-sm sm:col-span-2 bg-gradient-to-br from-primary/10 to-accent/5 border-primary/20">
+          <Card className="glass-card sm:col-span-2 shadow-2xl border-white/[0.08] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
             <CardHeader>
               <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                 <Search className="h-5 w-5" /> Keresés indítása
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-white/50 text-sm mt-1">
                 Böngéssz a térképen friss zöldségek, gyümölcsök és házi termékek után a közeledben.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
-              <Link href="/search" className={buttonVariants() + " font-semibold gap-1.5 shadow-sm flex items-center justify-center w-fit text-sm"}>
-                Térképes kereső megnyitása <ArrowRight className="h-4 w-4" />
+              <Link href="/search" className={buttonVariants() + " h-10 px-5 rounded-lg text-xs font-bold gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-0 text-white cursor-pointer"}>
+                Térképes kereső megnyitása <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </CardContent>
           </Card>
         )}
 
-        <Card className="shadow-sm">
+        <Card className="glass-card shadow-2xl border-white/[0.08]">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-bold">Üzenetek</CardTitle>
+            <CardTitle className="text-sm font-bold text-white/70">Üzenetek</CardTitle>
             <MessageSquare className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold">{unreadMessagesCount}</div>
-            <div className="flex items-center gap-1.5 mt-2">
-              <Badge variant={unreadMessagesCount > 0 ? 'default' : 'secondary'} className="text-[10px]">
+            <div className="text-3xl font-black text-white">{unreadMessagesCount}</div>
+            <div className="flex items-center gap-1.5 mt-3">
+              <Badge className={`text-[10px] font-bold rounded-md ${unreadMessagesCount > 0 ? 'bg-primary text-primary-foreground border-transparent' : 'bg-white/[0.04] text-white/60 border-white/[0.06]'}`}>
                 {unreadMessagesCount > 0 ? `${unreadMessagesCount} új` : 'nincs új'}
               </Badge>
-              <span className="text-[10px] text-muted-foreground">olvasatlan üzenet</span>
+              <span className="text-[10px] text-white/40">olvasatlan üzenet</span>
             </div>
           </CardContent>
         </Card>
@@ -162,33 +166,33 @@ export default async function DashboardPage() {
 
       {/* Quick Navigation Cards */}
       <div className="mt-4">
-        <h3 className="font-bold text-lg mb-4">Gyors elérés</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <h3 className="font-extrabold text-xl text-white mb-6">Gyors elérés</h3>
+        <div className="grid sm:grid-cols-2 gap-6">
           {isProducer ? (
             <>
               <Link href="/dashboard/products" className="group">
-                <Card className="hover:border-primary/50 transition-all p-5 h-full flex flex-col justify-between">
+                <Card className="glass-card glass-card-hover p-6 h-full flex flex-col justify-between shadow-2xl border-white/[0.08] cursor-pointer">
                   <div>
-                    <h4 className="font-bold group-hover:text-primary transition-colors">Termékek kezelése</h4>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    <h4 className="font-extrabold text-lg text-white group-hover:text-primary transition-colors">Termékek kezelése</h4>
+                    <p className="text-sm text-white/50 mt-2 leading-relaxed">
                       Tölts fel új árukat, módosítsd az árakat, vagy kapcsold be/ki a termékek elérhetőségét egyetlen gombbal.
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-primary mt-4 inline-flex items-center gap-1">
+                  <span className="text-xs font-bold text-primary mt-6 inline-flex items-center gap-1">
                     Termékeim megnyitása &rarr;
                   </span>
                 </Card>
               </Link>
 
               <Link href="/dashboard/locations" className="group">
-                <Card className="hover:border-primary/50 transition-all p-5 h-full flex flex-col justify-between">
+                <Card className="glass-card glass-card-hover p-6 h-full flex flex-col justify-between shadow-2xl border-white/[0.08] cursor-pointer">
                   <div>
-                    <h4 className="font-bold group-hover:text-primary transition-colors">Helyszínek & szállítás beállítása</h4>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    <h4 className="font-extrabold text-lg text-white group-hover:text-primary transition-colors">Helyszínek & szállítás beállítása</h4>
+                    <p className="text-sm text-white/50 mt-2 leading-relaxed">
                       Állítsd be a tanyád koordinátáit, határozd meg a kiszállítási hatósugarat és csatlakozz a közeli termelői piacokhoz.
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-primary mt-4 inline-flex items-center gap-1">
+                  <span className="text-xs font-bold text-primary mt-6 inline-flex items-center gap-1">
                     Helyszíneim megnyitása &rarr;
                   </span>
                 </Card>
@@ -196,14 +200,14 @@ export default async function DashboardPage() {
             </>
           ) : (
             <Link href="/dashboard/profile" className="group col-span-2">
-              <Card className="hover:border-primary/50 transition-all p-5 flex flex-col justify-between">
+              <Card className="glass-card glass-card-hover p-6 flex flex-col justify-between shadow-2xl border-white/[0.08] cursor-pointer">
                 <div>
-                  <h4 className="font-bold group-hover:text-primary transition-colors">Profil adatok és elérhetőségek</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  <h4 className="font-extrabold text-lg text-white group-hover:text-primary transition-colors">Profil adatok és elérhetőségek</h4>
+                  <p className="text-sm text-white/50 mt-2 leading-relaxed">
                     Módosítsd a nevedet, állítsd be a telefonszámodat, hogy a termelők felvehessék veled a kapcsolatot a foglalások kapcsán.
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-primary mt-4 inline-flex items-center gap-1">
+                <span className="text-xs font-bold text-primary mt-6 inline-flex items-center gap-1">
                   Profil módosítása &rarr;
                 </span>
               </Card>

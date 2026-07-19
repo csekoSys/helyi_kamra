@@ -24,11 +24,11 @@ async function checkAdmin(supabase: any) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('is_admin')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !profile.is_admin) {
     return { error: 'Nincs admin jogosultságod' }
   }
 

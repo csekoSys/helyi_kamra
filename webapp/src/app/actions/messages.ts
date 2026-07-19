@@ -12,12 +12,12 @@ export async function startOrSendMessage(producerId: string, content: string) {
   // Check if buyer profile exists
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('is_buyer, is_producer')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'buyer') {
-    return { error: 'Csak vásárlóként küldhetsz üzenetet a termelőknek' }
+  if (!profile || (!profile.is_buyer && !profile.is_producer)) {
+    return { error: 'Csak regisztrált felhasználóként küldhetsz üzenetet a termelőknek' }
   }
 
   // Find or create thread

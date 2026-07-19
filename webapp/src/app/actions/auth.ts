@@ -120,7 +120,7 @@ export async function updateProfile(prevState: any, data: {
   // Get user profile first to check role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('is_producer')
     .eq('id', user.id)
     .single()
 
@@ -128,7 +128,7 @@ export async function updateProfile(prevState: any, data: {
     return { error: 'Profil nem található' }
   }
 
-  if (profile.role === 'producer') {
+  if (profile.is_producer) {
     const { error } = await supabase
       .from('producer_profiles')
       .update({

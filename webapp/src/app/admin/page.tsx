@@ -17,11 +17,11 @@ export default async function AdminPage() {
   // Get user profile role and verify role is admin
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('is_admin')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !profile.is_admin) {
     redirect('/')
   }
 
@@ -33,7 +33,7 @@ export default async function AdminPage() {
       is_approved_by_admin,
       producer_profiles(farm_name, phone)
     `)
-    .eq('role', 'producer')
+    .eq('is_producer', true)
     .order('created_at', { ascending: false })
 
   // Fetch all central markets using coordinates view

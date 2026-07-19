@@ -8,11 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Plus, Edit, Trash2, HelpCircle, Carrot } from 'lucide-react'
+import { Loader2, Plus, Edit, Trash2, Carrot } from 'lucide-react'
 
 interface Category {
   id: string
@@ -39,7 +37,7 @@ interface ProductsClientProps {
 
 export default function ProductsClient({ products, categories, subscriptionTier }: ProductsClientProps) {
   const [loading, setLoading] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [isFormVisible, setIsFormVisible] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Form states
@@ -67,7 +65,7 @@ export default function ProductsClient({ products, categories, subscriptionTier 
     setImageUrl('')
     setTags('')
     setError(null)
-    setOpen(true)
+    setIsFormVisible(true)
   }
 
   const handleOpenEdit = (prod: Product) => {
@@ -81,7 +79,7 @@ export default function ProductsClient({ products, categories, subscriptionTier 
     setImageUrl(prod.image_url || '')
     setTags(prod.tags || '')
     setError(null)
-    setOpen(true)
+    setIsFormVisible(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,7 +111,7 @@ export default function ProductsClient({ products, categories, subscriptionTier 
       if (res.error) {
         setError(res.error)
       } else {
-        setOpen(false)
+        setIsFormVisible(false)
       }
     } catch (err: any) {
       setError('Hiba történt a mentés során.')
@@ -144,60 +142,65 @@ export default function ProductsClient({ products, categories, subscriptionTier 
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8 relative max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight font-heading">Termékeim</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Itt kezelheted a kínálatodat.</p>
+          <h1 className="text-3xl font-black text-white leading-tight">Termékeim</h1>
+          <p className="text-white/50 text-sm mt-1">Itt kezelheted a kínálatodat.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger onClick={handleOpenAdd} className={buttonVariants() + " font-semibold gap-1.5 shadow-sm text-sm cursor-pointer"}>
-            <Plus className="h-4 w-4" /> Új termék feltöltése
-          </DialogTrigger>
-          <DialogContent className="max-w-lg border-border">
-            <DialogHeader>
-              <DialogTitle className="font-bold">
-                {editingProduct ? 'Termék szerkesztése' : 'Új termék hozzáadása'}
-              </DialogTitle>
-              <DialogDescription>
-                Töltsd ki az alábbi adatokat a termék közzétételéhez.
-              </DialogDescription>
-            </DialogHeader>
+        {!isFormVisible && (
+          <Button onClick={handleOpenAdd} className="h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-0 shadow-lg cursor-pointer">
+            <Plus className="h-5 w-5 mr-2" /> Új termék feltöltése
+          </Button>
+        )}
+      </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 py-2">
+      {isFormVisible && (
+        <Card className="glass-card shadow-2xl border-white/[0.08] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="border-b border-white/[0.06] pb-6">
+            <CardTitle className="text-xl font-bold text-white">
+              {editingProduct ? 'Termék szerkesztése' : 'Új termék hozzáadása'}
+            </CardTitle>
+            <CardDescription className="text-white/50">
+              Töltsd ki az alábbi adatokat a termék közzétételéhez.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="p-3 text-xs font-semibold bg-destructive/10 text-destructive rounded-lg">
+                <div className="p-4 text-sm font-semibold bg-destructive/10 text-destructive rounded-xl border border-destructive/20">
                   {error}
                 </div>
               )}
 
-              {/* Limit alert in dialog */}
               {!editingProduct && limitReached && isActive && (
-                <div className="p-3 text-xs bg-amber-50 border border-amber-300 text-amber-800 rounded-lg">
+                <div className="p-4 text-sm bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl">
                   Elérted a 20 aktív termékes korlátot a díjmentes fiókoddal. Az új terméket csak inaktívként tudod elmenteni.
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Name */}
-                <div className="col-span-2 flex flex-col gap-1.5">
-                  <Label htmlFor="prod-name">Terméknév</Label>
+                <div className="md:col-span-2 flex flex-col gap-2.5">
+                  <Label htmlFor="prod-name" className="font-bold text-white/80">Terméknév</Label>
                   <Input
                     id="prod-name"
                     value={name}
-                                    placeholder="pl. Friss kerti eper"
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="pl. Friss kerti eper"
                     required
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
 
                 {/* Category */}
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="prod-cat">Kategória</Label>
+                <div className="flex flex-col gap-2.5">
+                  <Label htmlFor="prod-cat" className="font-bold text-white/80">Kategória</Label>
                   <Select value={categoryId} onValueChange={(val) => setCategoryId(val || '')} required>
-                    <SelectTrigger id="prod-cat">
+                    <SelectTrigger id="prod-cat" className="h-14 rounded-xl border-white/[0.08] bg-white/[0.01] text-white focus:border-primary/50">
                       <SelectValue placeholder="Válassz..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="border-white/[0.08] bg-card/90 backdrop-blur-xl">
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
@@ -208,13 +211,13 @@ export default function ProductsClient({ products, categories, subscriptionTier 
                 </div>
 
                 {/* Unit */}
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="prod-unit">Mértékegység</Label>
+                <div className="flex flex-col gap-2.5">
+                  <Label htmlFor="prod-unit" className="font-bold text-white/80">Mértékegység</Label>
                   <Select value={unit} onValueChange={(val) => setUnit(val || 'kg')} required>
-                    <SelectTrigger id="prod-unit">
+                    <SelectTrigger id="prod-unit" className="h-14 rounded-xl border-white/[0.08] bg-white/[0.01] text-white focus:border-primary/50">
                       <SelectValue placeholder="Mértékegység..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="border-white/[0.08] bg-card/90 backdrop-blur-xl">
                       <SelectItem value="kg">kg (kilogramm)</SelectItem>
                       <SelectItem value="db">db (darab)</SelectItem>
                       <SelectItem value="liter">liter</SelectItem>
@@ -225,8 +228,8 @@ export default function ProductsClient({ products, categories, subscriptionTier 
                 </div>
 
                 {/* Price */}
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="prod-price">Egységár (Ft)</Label>
+                <div className="flex flex-col gap-2.5">
+                  <Label htmlFor="prod-price" className="font-bold text-white/80">Egységár (Ft)</Label>
                   <Input
                     id="prod-price"
                     type="number"
@@ -235,48 +238,52 @@ export default function ProductsClient({ products, categories, subscriptionTier 
                     placeholder="pl. 1200"
                     min="0"
                     required
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
 
                 {/* Tags */}
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="prod-tags">Címke / Jellemző</Label>
+                <div className="flex flex-col gap-2.5">
+                  <Label htmlFor="prod-tags" className="font-bold text-white/80">Címke / Jellemző</Label>
                   <Input
                     id="prod-tags"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
                     placeholder="pl. Bio, Szedd magad"
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
 
                 {/* Image URL */}
-                <div className="col-span-2 flex flex-col gap-1.5">
-                  <Label htmlFor="prod-image">Termékkép URL (opcionális)</Label>
+                <div className="md:col-span-2 flex flex-col gap-2.5">
+                  <Label htmlFor="prod-image" className="font-bold text-white/80">Termékkép URL (opcionális)</Label>
                   <Input
                     id="prod-image"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     placeholder="https://..."
+                    className="border-white/[0.08] bg-white/[0.01] text-white focus-visible:border-primary/50 focus-visible:ring-primary/20 rounded-xl"
                   />
                 </div>
 
                 {/* Description */}
-                <div className="col-span-2 flex flex-col gap-1.5">
-                  <Label htmlFor="prod-desc">Leírás (opcionális)</Label>
+                <div className="md:col-span-2 flex flex-col gap-2.5">
+                  <Label htmlFor="prod-desc" className="font-bold text-white/80">Leírás (opcionális)</Label>
                   <Textarea
                     id="prod-desc"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Rövid tájékoztató a termékről..."
                     rows={3}
+                    className="border-white/[0.08] bg-white/[0.01] text-white placeholder:text-white/30 rounded-xl focus:border-primary/50 focus-visible:ring-primary/20 resize-none"
                   />
                 </div>
 
                 {/* Active switch */}
-                <div className="col-span-2 flex items-center justify-between border-t border-border pt-4">
-                  <div className="flex flex-col gap-0.5">
-                    <Label htmlFor="prod-active">Azonnal kapható (Aktív)</Label>
-                    <span className="text-[10px] text-muted-foreground">
+                <div className="md:col-span-2 flex items-center justify-between border-t border-white/[0.06] pt-5 mt-2">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="prod-active" className="font-bold text-white">Azonnal kapható (Aktív)</Label>
+                    <span className="text-xs text-white/40">
                       Az inaktív termékek nem jelennek meg a nyilvános adatlapon.
                     </span>
                   </div>
@@ -294,93 +301,102 @@ export default function ProductsClient({ products, categories, subscriptionTier 
                 </div>
               </div>
 
-              <DialogFooter className="border-t border-border pt-4">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Mégse</Button>
-                <Button type="submit" disabled={loading} className="font-semibold">
+              <CardFooter className="border-t border-white/[0.06] pt-6 px-0 pb-0 gap-3 justify-end">
+                <Button type="button" variant="outline" onClick={() => setIsFormVisible(false)} className="h-12 px-6 rounded-xl border-white/10 hover:bg-white/[0.08] text-white hover:text-white cursor-pointer">
+                  Mégse
+                </Button>
+                <Button type="submit" disabled={loading} className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-0 text-white cursor-pointer">
                   {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Mentés
                 </Button>
-              </DialogFooter>
+              </CardFooter>
             </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Free Tier Limit Notification */}
-      {subscriptionTier === 'free' && (
-        <Card className="bg-primary/5 border-primary/20 p-4 rounded-xl flex items-center justify-between gap-4 text-sm">
-          <div>
-            Jelenleg a <strong className="text-primary font-bold">Díjmentes csomagban</strong> vagy. 
-            Aktív termékek száma: <strong className="text-foreground">{activeCount} / 20</strong>.
-          </div>
-          {limitReached && (
-            <Badge variant="destructive">Limit elért</Badge>
-          )}
+          </CardContent>
         </Card>
       )}
 
-      {/* Products Table */}
-      {products.length > 0 ? (
-        <div className="border border-border rounded-xl bg-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Név</TableHead>
-                <TableHead>Ár</TableHead>
-                <TableHead>Mértékegység</TableHead>
-                <TableHead>Státusz</TableHead>
-                <TableHead className="text-right">Műveletek</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      {!isFormVisible && (
+        <>
+          {subscriptionTier === 'free' && (
+            <Card className="glass-card border-white/[0.08] p-5 rounded-2xl flex items-center justify-between gap-4 shadow-xl">
+              <div className="text-sm text-white/70">
+                Jelenleg a <strong className="text-primary font-bold">Díjmentes csomagban</strong> vagy. 
+                Aktív termékek száma: <strong className="text-white">{activeCount} / 20</strong>.
+              </div>
+              {limitReached && (
+                <Badge variant="destructive" className="bg-destructive/20 border-destructive/30 text-destructive-foreground font-bold px-3 py-1 rounded-full">Limit elért</Badge>
+              )}
+            </Card>
+          )}
+
+          {products.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((prod) => (
-                <TableRow key={prod.id} className={!prod.is_active ? 'opacity-60 bg-muted/20' : ''}>
-                  <TableCell className="font-semibold text-foreground">{prod.name}</TableCell>
-                  <TableCell className="font-bold">{Math.round(prod.price)} Ft</TableCell>
-                  <TableCell>{prod.unit}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={prod.is_active}
-                        onCheckedChange={() => handleToggleActive(prod.id, prod.is_active)}
-                      />
-                      <Badge variant={prod.is_active ? 'default' : 'secondary'} className="text-[10px]">
-                        {prod.is_active ? 'Kapható' : 'Nem kapható'}
-                      </Badge>
+                <Card key={prod.id} className={`glass-card hover:border-white/15 transition-all duration-300 shadow-xl overflow-hidden flex flex-col justify-between ${!prod.is_active ? 'opacity-60' : ''}`}>
+                  <div className="h-40 bg-white/[0.01] flex items-center justify-center relative border-b border-white/[0.04]">
+                    {prod.image_url ? (
+                      <img src={prod.image_url} alt={prod.name} className="object-cover w-full h-full" />
+                    ) : (
+                      <Carrot className="h-14 w-14 text-primary/10" />
+                    )}
+                    <Badge className="absolute top-3 left-3 text-[10px] font-bold bg-white/[0.05] border border-white/[0.08] text-primary" variant="secondary">
+                      {categories.find(c => c.id === prod.category_id)?.name || 'Kategória'}
+                    </Badge>
+                  </div>
+                  <CardHeader className="p-5 pb-2">
+                    <CardTitle className="text-lg font-bold text-white">{prod.name}</CardTitle>
+                    <CardDescription className="text-sm text-white/50 line-clamp-2 mt-1">
+                      {prod.description || 'Nincs leírás megadva.'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-5 pt-0">
+                    <div className="flex justify-between items-center mt-2 pb-4 border-b border-white/[0.04]">
+                      <div className="text-primary font-black text-xl">
+                        {Math.round(prod.price)} Ft <span className="text-xs font-semibold text-white/40">/ {prod.unit}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-white/[0.02] border border-white/[0.06] py-1 px-3 rounded-full">
+                        <Switch
+                          checked={prod.is_active}
+                          onCheckedChange={() => handleToggleActive(prod.id, prod.is_active)}
+                          className="scale-90"
+                        />
+                        <span className="text-[10px] font-bold text-white/80">
+                          {prod.is_active ? 'Aktív' : 'Inaktív'}
+                        </span>
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right flex items-center justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleOpenEdit(prod)}
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(prod.id)}
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                    <div className="flex gap-3 mt-4">
+                      <Button 
+                        variant="secondary" 
+                        className="flex-1 h-11 rounded-lg border-white/10 text-white font-bold bg-white/[0.02] hover:bg-white/[0.08] cursor-pointer" 
+                        onClick={() => handleOpenEdit(prod)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Szerkesztés
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        className="h-11 w-11 rounded-lg flex-shrink-0 cursor-pointer" 
+                        onClick={() => handleDelete(prod.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <Card className="p-12 text-center border-dashed">
-          <Carrot className="h-16 w-16 text-muted-foreground/20 mx-auto mb-3" />
-          <h3 className="font-bold text-lg mb-1">Még nincsenek termékeid feltöltve</h3>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-            Kattints a fenti "Új termék feltöltése" gombra a kínálatod összeállításához.
-          </p>
-          <Button onClick={handleOpenAdd} className="font-semibold">Az első termékem feltöltése</Button>
-        </Card>
+            </div>
+          ) : (
+            <Card className="glass-card p-16 text-center border-dashed border-white/[0.08] shadow-xl">
+              <Carrot className="h-16 w-16 text-primary/20 mx-auto mb-4" />
+              <h3 className="font-bold text-lg text-white mb-2">Még nincsenek termékeid feltöltve</h3>
+              <p className="text-sm text-white/50 max-w-sm mx-auto mb-8 leading-relaxed">
+                Kattints a fenti "Új termék feltöltése" gombra a kínálatod összeállításához.
+              </p>
+              <Button onClick={handleOpenAdd} className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-0 text-white cursor-pointer">Az első termékem feltöltése</Button>
+            </Card>
+          )}
+        </>
       )}
     </div>
   )

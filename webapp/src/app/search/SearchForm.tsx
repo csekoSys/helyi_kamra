@@ -66,80 +66,98 @@ export default function SearchForm({ categories }: { categories: Category[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card border border-border p-6 rounded-xl shadow-sm flex flex-col gap-6">
-      <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      {/* Category Buttons Grid */}
+      <div className="flex flex-col gap-4">
+        <Label className="font-extrabold text-lg text-white">Mit keresel ma?</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          <Button
+            type="button"
+            className={`h-14 rounded-2xl flex items-center justify-center gap-2 border font-bold text-sm transition-all duration-300 cursor-pointer ${
+              categoryId === 'all'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-transparent shadow-[0_0_20px_rgba(52,211,153,0.25)]'
+                : 'bg-white/[0.02] border-white/[0.06] text-white/80 hover:text-white hover:bg-white/[0.06] hover:border-white/12'
+            }`}
+            onClick={() => setCategoryId('all')}
+          >
+            <span>Minden</span>
+          </Button>
+          {categories.slice(0, 5).map((cat) => {
+            const isSelected = categoryId === cat.id
+            return (
+              <Button
+                key={cat.id}
+                type="button"
+                className={`h-14 rounded-2xl flex items-center justify-center gap-2 border font-bold text-sm transition-all duration-300 cursor-pointer ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-transparent shadow-[0_0_20px_rgba(52,211,153,0.25)]'
+                    : 'bg-white/[0.02] border-white/[0.06] text-white/80 hover:text-white hover:bg-white/[0.06] hover:border-white/12'
+                }`}
+                onClick={() => setCategoryId(cat.id)}
+              >
+                <span className="line-clamp-1">{cat.name}</span>
+              </Button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="glass-card p-6 md:p-8 rounded-3xl flex flex-col gap-6 shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
         {/* Keyword Search */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="query" className="font-semibold text-xs">Termék vagy Termelő neve</Label>
+        <div className="flex flex-col gap-2.5">
+          <Label htmlFor="query" className="font-bold text-sm text-white/80">Szabad szavas keresés</Label>
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-4.5 h-5 w-5 text-white/40" />
             <Input
               id="query"
               type="text"
-              placeholder="pl. alma, méz, kovi..."
+              placeholder="pl. friss alma, méz, kézműves sajt..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
+              className="pl-12 h-14 rounded-xl border border-white/[0.08] bg-white/[0.01] text-white placeholder:text-white/30 focus-visible:border-primary/50 focus-visible:ring-primary/20"
             />
           </div>
         </div>
 
-        {/* Category Dropdown */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="category" className="font-semibold text-xs">Kategória</Label>
-          <Select value={categoryId} onValueChange={(val) => setCategoryId(val || 'all')}>
-            <SelectTrigger id="category">
-              <SelectValue placeholder="Összes kategória" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Összes kategória</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Distance Dropdown */}
+          <div className="flex flex-col gap-2.5">
+            <Label htmlFor="distance" className="font-bold text-sm text-white/80">Távolság tőled</Label>
+            <Select value={distance} onValueChange={(val) => setDistance(val || '25')}>
+              <SelectTrigger id="distance" className="h-14 rounded-xl border border-white/[0.08] bg-white/[0.01] text-white font-semibold focus:border-primary/50">
+                <SelectValue placeholder="Válassz távolságot" />
+              </SelectTrigger>
+              <SelectContent className="border-white/[0.08] bg-card/90 backdrop-blur-xl">
+                <SelectItem value="10">10 km-en belül</SelectItem>
+                <SelectItem value="25">25 km-en belül</SelectItem>
+                <SelectItem value="50">50 km-en belül</SelectItem>
+                <SelectItem value="100">100 km-en belül</SelectItem>
+                <SelectItem value="1000">Országos (bárhol)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-end">
+             <Button
+                type="button"
+                onClick={handleGeolocation}
+                disabled={locating}
+                className="h-14 w-full rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.08] text-white font-bold transition-all cursor-pointer"
+              >
+                {locating ? (
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" />
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" /> Helymeghatározás
+                  </span>
+                )}
+             </Button>
+          </div>
         </div>
 
-        {/* Distance Selector */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="distance" className="font-semibold text-xs">Távolság (km)</Label>
-          <Select value={distance} onValueChange={(val) => setDistance(val || '25')}>
-            <SelectTrigger id="distance">
-              <SelectValue placeholder="Hatósugár" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5 km</SelectItem>
-              <SelectItem value="10">10 km</SelectItem>
-              <SelectItem value="25">25 km</SelectItem>
-              <SelectItem value="50">50 km</SelectItem>
-              <SelectItem value="100">100 km</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Geolocation & Search Buttons */}
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleGeolocation}
-            disabled={locating}
-            className="flex-1"
-          >
-            {locating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <MapPin className="h-4 w-4 text-primary" />
-            )}
-            <span className="ml-1.5 hidden lg:inline">Pozícióm</span>
-          </Button>
-
-          <Button type="submit" className="flex-1 font-semibold">
-            Keresés
-          </Button>
-        </div>
+        <Button type="submit" className="w-full h-14 rounded-xl text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white border-0 shadow-lg shadow-emerald-950/20 mt-2 cursor-pointer">
+          Keresés indítása
+        </Button>
       </div>
     </form>
   )

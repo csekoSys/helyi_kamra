@@ -146,7 +146,7 @@ export default function RegisterForm() {
                   placeholder="Kovács János"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  required
+                  required  className="pl-9"
                 />
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function RegisterForm() {
                   placeholder="pl. Aranykalász Családi Gazdaság"
                   value={farmName}
                   onChange={(e) => setFarmName(e.target.value)}
-                  required={isProducer}
+                  required={isProducer}  className="pl-9"
                 />
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function RegisterForm() {
                 type="tel"
                 placeholder="+36 30 123 4567"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value)}  className="pl-9"
               />
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function RegisterForm() {
                 placeholder="pelda@helyikamra.hu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
+                required  className="pl-9"
               />
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function RegisterForm() {
                 placeholder="minimum 6 karakter"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                required  className="pl-9"
               />
             </div>
           </div>

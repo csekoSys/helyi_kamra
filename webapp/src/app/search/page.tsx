@@ -4,20 +4,12 @@ import SearchForm from './SearchForm'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapMarker } from '@/components/Map'
+import DynamicMap, { type MapMarker } from '@/components/DynamicMap'
 import { Carrot, MapPin, Store, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 
-// Dynamically import Leaflet Map to avoid SSR issues
-const Map = dynamic(() => import('@/components/Map'), {
-  ssr: false,
-  loading: () => (
-    <Card className="w-full h-[500px] flex items-center justify-center bg-muted">
-      <p className="text-muted-foreground animate-pulse">Térkép betöltése...</p>
-    </Card>
-  ),
-})
+// Dynamic map wrapper is imported directly now
 
 export const metadata = {
   title: 'Keresés - HelyiKamra',
@@ -183,7 +175,7 @@ export default async function SearchPage({
           {/* Map side */}
           <div className="lg:col-span-7 h-[500px] lg:h-[600px]">
             <TabsContent value="map" className="mt-0 h-full block sm:block sm:data-[state=inactive]:block">
-              <Map 
+              <DynamicMap 
                 center={[lat, lng]} 
                 zoom={11} 
                 markers={allMarkers} 

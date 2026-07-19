@@ -1,4 +1,3 @@
-import dynamic from 'next/dynamic'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ContactForm from './ContactForm'
@@ -6,15 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Phone, Mail, Store, AlertCircle, ShoppingBag, Carrot } from 'lucide-react'
 import { MapMarker } from '@/components/Map'
-
-const Map = dynamic(() => import('@/components/Map'), {
-  ssr: false,
-  loading: () => (
-    <Card className="w-full h-[300px] flex items-center justify-center bg-muted">
-      <p className="text-muted-foreground animate-pulse">Térkép betöltése...</p>
-    </Card>
-  ),
-})
+import DynamicMap from '@/components/DynamicMap'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params
@@ -203,7 +194,7 @@ export default async function ProducerPage({ params }: { params: Promise<{ id: s
             </h2>
             <div className="h-[250px] w-full rounded-xl overflow-hidden shadow-inner">
               {locations && locations.length > 0 ? (
-                <Map 
+                <DynamicMap 
                   center={[locations[0].latitude, locations[0].longitude]} 
                   zoom={12} 
                   markers={markers} 
